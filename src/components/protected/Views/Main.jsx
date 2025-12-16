@@ -3417,11 +3417,13 @@ for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-gray-500">No sheets found.</p>
-          <div className="flex items-center justify-center mt-4 gap-2">
+          <FileSpreadsheet className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-700 mb-2">No Sheets Available</h2>
+          <p className="text-gray-500 mb-6">Get started by creating your first sheet</p>
+          <div className="flex items-center justify-center gap-3">
             <button
               onClick={() => window.location.reload()}
-              className=" bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+              className="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors"
             >
               Refresh
             </button>
@@ -3430,9 +3432,9 @@ for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
                 onClick={() => {
                   navigate("/create-sheet");
                 }}
-                className="bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-all"
+                className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-all font-medium"
               >
-                New Sheet
+                Create New Sheet
               </button>
             )}
           </div>
