@@ -3535,26 +3535,42 @@ for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
             <div className="flex-1 overflow-y-auto">
               <div className="space-y-1 pr-2">
                 {processedData.length > 0 ? (
-                  filteredSheets.map((sheet) => (
-                    <button
-                      key={sheet["_id"]}
-                      onClick={() => {
-                        setSelectedSheetId(sheet["_id"]);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm truncate ${
-                        selectedSheetId === sheet["_id"]
-                          ? "bg-blue-50 text-blue-700 font-medium"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                      title={sheet["sheetName"]
-                        .replace(/-/g, " ")
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}
-                    >
-                      {sheet["sheetName"]
-                        .replace(/-/g, " ")
-                        .replace(/\b\w/g, (l) => l.toUpperCase())}
-                    </button>
-                  ))
+                  <>
+                    {filteredSheets.map((sheet) => (
+                      <button
+                        key={sheet["_id"]}
+                        onClick={() => {
+                          setSelectedSheetId(sheet["_id"]);
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm truncate ${
+                          selectedSheetId === sheet["_id"]
+                            ? "bg-blue-50 text-blue-700 font-medium"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                        title={sheet["sheetName"]
+                          .replace(/-/g, " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      >
+                        {sheet["sheetName"]
+                          .replace(/-/g, " ")
+                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                      </button>
+                    ))}
+
+                    {/* Create New Sheet Button in Sidebar */}
+                    {isAdmin && (
+                      <div className="mt-4 pt-4 border-t border-gray-200">
+                        <button
+                          onClick={() => navigate("/create-sheet")}
+                          className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-medium transition-all duration-200 shadow-sm"
+                          title="Create a new sheet"
+                        >
+                          <Plus size={18} />
+                          <span>Create Sheet</span>
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className="text-center py-4">
                     <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
@@ -3582,6 +3598,20 @@ for (let rowIndex = 0; rowIndex < numRows; rowIndex++) {
               className="fixed left-4 top-20 z-10 bg-white shadow-md rounded-full p-2 border border-gray-200"
             >
               <ChevronRight size={20} />
+            </button>
+          )}
+
+          {/* Floating Create Sheet Button for Admin Users */}
+          {isAdmin && (
+            <button
+              onClick={() => navigate("/create-sheet")}
+              className="fixed bottom-6 right-6 z-50 bg-green-600 hover:bg-green-700 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 group"
+              title="Create New Sheet"
+            >
+              <Plus size={24} />
+              <div className="absolute bottom-full right-0 mb-2 px-3 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                Create New Sheet
+              </div>
             </button>
           )}
 
