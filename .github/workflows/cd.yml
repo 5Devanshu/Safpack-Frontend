@@ -1,0 +1,43 @@
+name: CD Pipeline
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    
+    steps:
+    - name: Check if CI workflow succeeded
+      run: |
+        if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+          echo "CI workflow failed, skipping deployment"
+          exit 1
+        fi
+    
+    - name: Login to DockerHub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+    
+    - name: Pull latest Docker image
+      run: docker pull financesafpack/safpack-frontend:latest
+      
+    - name: Stop and remove existing container
+      run: |
+        docker stop safpack-frontend || true
+        docker rm safpack-frontend || true
+        
+    - name: Run new Docker container
+      run: |
+        docker run -d \
+          --name safpack-frontend \
+          --restart unless-stopped \
+          -p 8080:80 \
+          financesafpack/safpack-frontend:latest
+    
+    - name: Clean up old images
+      run: docker image prune -f

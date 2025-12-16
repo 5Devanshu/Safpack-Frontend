@@ -1,0 +1,50 @@
+sim.safpack.org {
+    # Serve static files
+    root * /usr/share/caddy
+    
+    # Enable gzip compression
+    encode gzip
+
+    # Handle React Router (SPA)
+    try_files {path} /index.html
+
+    # Security headers
+    header {
+        # HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # XSS Protection
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        X-XSS-Protection "1; mode=block"
+        # CSP (adjust as needed)
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://backend.safpack.org; frame-ancestors 'none';"
+        # Remove server info
+        -Server
+    }
+
+    # Cache static assets
+    @static {
+        file
+        path *.ico *.css *.js *.gif *.jpg *.jpeg *.png *.svg *.woff *.woff2 *.ttf *.eot
+    }
+    header @static Cache-Control "public, max-age=31536000, immutable"
+
+    # API proxy to backend (if needed)
+    handle /api/* {
+        reverse_proxy https://backend.safpack.org {
+            header_up Host backend.safpack.org
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # File server
+    file_server
+
+    # Logging
+    log {
+        output file /var/log/caddy/access.log
+        format json
+    }
+}
