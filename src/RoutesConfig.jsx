@@ -47,7 +47,7 @@ const RoutesConfig = () => {
         <Route
           path="/admin-login"
           className="transition-all scrollbar-hide"
-          element={[<LoginAdmin />]}
+          element={[<Login />]}
         />
         <Route
           path="/verify-email"

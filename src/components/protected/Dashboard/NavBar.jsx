@@ -50,7 +50,7 @@ function NavBar() {
   };
 
   const logout = () => {
-    dispatch(logoutFunction(account?.role, navigate));
+    dispatch(logoutFunction(navigate));
   };
 
   return (

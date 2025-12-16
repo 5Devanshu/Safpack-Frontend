@@ -15,94 +15,68 @@ const { LOGIN_API, ADMIN_LOGIN_API, LOGOUT_API, ADMIN_LOGOUT_API } = authEndpoin
 const { SELF_INFO_API } = userEndpoints;
 const { FETCH_ALL_METAS_API } = adminEndpoints;
 
-export function login(email, password, login_role, navigate) {
+export function login(email, password, navigate) {
   return async (dispatch) => {
     const loadingToast = toast.loading("Letting you in...");
 
     try {
-      const response =
-        login_role === "user"
-          ? await apiConnector("POST", LOGIN_API, { email, password })
-          : await apiConnector("POST", ADMIN_LOGIN_API, { email, password });
+      // Use the user login API endpoint (assuming backend determines role)
+      const response = await apiConnector("POST", LOGIN_API, { email, password });
 
       console.log("Login API response : ", response);
       if (response.status === 200) {
         toast.success(response.data.msg || "Login Successful!");
 
-        if (login_role === "user") {
-          // Handle user login flow
-          try {
-            const userInfoResponse = await apiConnector("GET", SELF_INFO_API);
-            console.log("User Info API response: ", userInfoResponse);
+        // Get user info from login response
+        const userData = response.data.user || response.data.data || response.data;
 
-            // Set user account info
-            const userAccount = {
-              id: userInfoResponse.data._id,
-              uname: userInfoResponse.data.name,
-              uemail: email, // Use email from login
-              userId: userInfoResponse.data.userId,
-              role: login_role,
-              roleIdentifier: userInfoResponse.data.roleIdentifier,
-            };
-            dispatch(setAccount(userAccount));
+        // Determine role from response
+        const userRole = userData.role || "user";
 
-            // Set user metadata (allowedAccess)
-            dispatch(
-              setMetadata({ metadata: userInfoResponse.data.allowedAccess })
-            );
-          } catch (error) {
-            console.error("Error fetching user info: ", error);
-            toast.error("Failed to fetch user information.");
-            return;
-          }
-        } else {
-          // Handle admin login flow
-          try {
-            // Set admin account info from login response
-            const adminAccount = {
-              // id: response.data.data.u_id,
-              uemail: email,
-              role: login_role,
-              roleIdentifier: "admin",
-            };
-            dispatch(setAccount(adminAccount));
+        // Set account info based on role
+        const accountInfo = {
+          id: userData.id || userData._id,
+          uname: userData.name,
+          uemail: userData.email || email,
+          userId: userData.userId,
+          role: userRole,
+          roleIdentifier: userRole === "admin" ? "admin" : userData.roleIdentifier,
+          is_active: userData.is_active
+        };
 
+        dispatch(setAccount(accountInfo));
+
+        // Fetch metadata based on role
+        try {
+          if (userRole === "admin") {
             // Fetch all metadata for admin
-            const metadataResponse = await apiConnector(
-              "GET",
-              FETCH_ALL_METAS_API
-            );
-            // console.log("Metadata API response: ", metadataResponse);
+            const metadataResponse = await apiConnector("GET", FETCH_ALL_METAS_API);
             dispatch(setMetadata({ metadata: metadataResponse.data }));
-          } catch (error) {
-            console.error("Error fetching admin metadata: ", error);
-            toast.error("Failed to fetch metadata.");
-            return;
+          } else {
+            // For regular users, use allowedAccess from user data if available
+            // Otherwise fetch from SELF_INFO_API
+            if (userData.allowedAccess) {
+              dispatch(setMetadata({ metadata: userData.allowedAccess }));
+            } else {
+              const userInfoResponse = await apiConnector("GET", SELF_INFO_API);
+              dispatch(setMetadata({ metadata: userInfoResponse.data.allowedAccess }));
+            }
           }
+        } catch (error) {
+          console.error("Error fetching metadata: ", error);
+          toast.error("Failed to fetch user data.");
+          return;
         }
 
-        // Navigate to appropriate dashboard
+        // Navigate to sheets (same for both roles)
         dispatch(setDFeature({ dashboardFeature: "Home" }));
-        navigate(login_role === "user" ? "/sheets" : "/sheets");
+        navigate("/sheets");
       } else {
         throw new Error(response.data.msg);
       }
     } catch (error) {
       console.log("Login API Error....", error);
       console.log("Login API Error....", error.response?.data?.message);
-
-      // Development fallback (remove in production)
-      // const fallbackAccount = {
-      //   id: 1,
-      //   uname: "Haresh Kurade",
-      //   uemail: "kuradeharesh4002@gmail.com",
-      //   role_id: 1,
-      //   role: "admin",
-      //   roleIdentifier: "admin",
-      // };
-      // dispatch(setAccount(fallbackAccount));
-      // dispatch(setDFeature({ dashboardFeature: "Home" }));
-      // navigate("/sheets");
 
       toast.error(
         error.response?.data?.msg || "Login failed. Please try again."
@@ -113,18 +87,16 @@ export function login(email, password, login_role, navigate) {
   };
 }
 
-export function logoutFunction(login_role, navigate) {
+export function logoutFunction(navigate) {
   return async (dispatch) => {
     const loadingToast = toast.loading("Logging you out...");
 
     try {
-      const response =
-        login_role === "user"
-          ? await apiConnector("POST", LOGOUT_API, {})
-          : await apiConnector("POST", ADMIN_LOGOUT_API, {});
+      // Use the user logout API endpoint (assuming backend handles role-based logout)
+      const response = await apiConnector("POST", LOGOUT_API, {});
 
       console.log("Logout API response : ", response);
-      
+
       if (response.status === 200) {
         toast.success(response.data.msg || "Logout Successful!");
 

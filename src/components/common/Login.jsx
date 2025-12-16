@@ -20,7 +20,7 @@ const Login = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isLoginView) {
-      dispatch(login(email, password, "user", navigate));
+      dispatch(login(email, password, navigate));
     } else {
       dispatch(register(name, email, password, mobile, navigate));
     }
@@ -129,11 +129,7 @@ const Login = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <button onClick={()=> {navigate("/admin-login")}} className="text-sm font-semibold text-blue-800 hover:text-blue-700 transition-colors cursor-pointer"> Admin Login </button>
-                  </div>
-
+                <div className="flex items-center justify-end">
                   <a
                     href="#"
                     className="text-sm font-semibold text-blue-800 hover:text-blue-700 transition-colors"
