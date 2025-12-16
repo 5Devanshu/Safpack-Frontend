@@ -20,7 +20,7 @@ export function login(email, password, navigate) {
     const loadingToast = toast.loading("Letting you in...");
 
     try {
-      // Use the user login API endpoint (assuming backend determines role)
+      // Use the auth login API endpoint
       const response = await apiConnector("POST", LOGIN_API, { email, password });
 
       console.log("Login API response : ", response);
@@ -28,47 +28,30 @@ export function login(email, password, navigate) {
         toast.success(response.data.msg || "Login Successful!");
 
         // Get user info from login response
-        const userData = response.data.user || response.data.data || response.data;
+        const userData = response.data.user;
 
-        // Determine role from response
-        const userRole = userData.role || "user";
-
-        // Set account info based on role
+        // Set account info based on user data
         const accountInfo = {
-          id: userData.id || userData._id,
+          id: userData.id,
           uname: userData.name,
-          uemail: userData.email || email,
-          userId: userData.userId,
-          role: userRole,
-          roleIdentifier: userRole === "admin" ? "admin" : userData.roleIdentifier,
+          uemail: userData.email,
+          role: userData.role,
           is_active: userData.is_active
         };
 
         dispatch(setAccount(accountInfo));
 
-        // Fetch metadata based on role
+        // Fetch sheets list (metadata) - backend handles permissions
         try {
-          if (userRole === "admin") {
-            // Fetch all metadata for admin
-            const metadataResponse = await apiConnector("GET", FETCH_ALL_METAS_API);
-            dispatch(setMetadata({ metadata: metadataResponse.data }));
-          } else {
-            // For regular users, use allowedAccess from user data if available
-            // Otherwise fetch from SELF_INFO_API
-            if (userData.allowedAccess) {
-              dispatch(setMetadata({ metadata: userData.allowedAccess }));
-            } else {
-              const userInfoResponse = await apiConnector("GET", SELF_INFO_API);
-              dispatch(setMetadata({ metadata: userInfoResponse.data.allowedAccess }));
-            }
-          }
+          const sheetsResponse = await apiConnector("GET", "/sheets");
+          dispatch(setMetadata({ metadata: sheetsResponse.data }));
         } catch (error) {
-          console.error("Error fetching metadata: ", error);
-          toast.error("Failed to fetch user data.");
+          console.error("Error fetching sheets: ", error);
+          toast.error("Failed to fetch sheets data.");
           return;
         }
 
-        // Navigate to sheets (same for both roles)
+        // Navigate to sheets
         dispatch(setDFeature({ dashboardFeature: "Home" }));
         navigate("/sheets");
       } else {

@@ -7,53 +7,43 @@ const { FETCH_ALL_METAS_API, UPDATE_METAS_API } = adminEndpoints;
 const { REFERENCE_LINK_CHECK_API, CREATE_SHEET_API } = sheetEndpoints;
 
 export async function fetchMetadata(login_role) {
-  if (login_role === "user") {
-    // Handle user login flow
-    try {
-      const userInfoResponse = await apiConnector("GET", SELF_INFO_API);
-      return userInfoResponse.data.allowedAccess;
-
-      //   dispatch(setMetadata({ metadata: userInfoResponse.data.allowedAccess }));
-    } catch (error) {
-      console.error("Error fetching metas: ", error);
-      toast.error("Failed to fetch metas.");
-      return;
-    }
-  } else {
-    try {
-      // Fetch all metadata for admin
-      const metadataResponse = await apiConnector("GET", FETCH_ALL_METAS_API);
-      // console.log("Metadata API response: ", metadataResponse);
-      return metadataResponse.data;
-      //   dispatch(setMetadata({ metadata: metadataResponse.data }));
-    } catch (error) {
-      console.error("Error fetching admin metadata: ", error);
-      toast.error("Failed to fetch metadata.");
-      return;
-    }
+  // Backend handles permissions, just fetch sheets list
+  try {
+    const sheetsResponse = await apiConnector("GET", "/sheets");
+    return sheetsResponse.data;
+  } catch (error) {
+    console.error("Error fetching sheets: ", error);
+    toast.error("Failed to fetch sheets.");
+    return [];
   }
 }
 export async function getSheetsData(login_role, sheetId, year, month) {
-  // console.log("sheetId..", sheetId);
   const loadingToast = toast.loading("Fetching Sheets Data...");
 
   try {
-    let url = `${GET_SHEET_API}/${sheetId}/values`;
-    // Add query parameters if provided
+    // Backend uses /rows/sheet/:id with from/to query params
+    let url = `/rows/sheet/${sheetId}`;
+
+    // Add query parameters for date range if provided
     const params = new URLSearchParams();
-    if (year) params.append("year", year);
-    if (month) params.append("month", month);
+    if (year && month) {
+      // Create date range for the month
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+      const endDate = new Date(year, month, 0).toISOString().split('T')[0]; // Last day of month
+      params.append("from", startDate);
+      params.append("to", endDate);
+    }
 
     if (params.toString()) {
       url += `?${params.toString()}`;
     }
 
     const response = await apiConnector("GET", url);
-    // console.log("Sheets Data API response: ", response);
+    console.log("Sheets Data API response: ", response);
 
     if (response.status === 200) {
       toast.success("Sheets data fetched successfully!");
-      return response.data?.data;
+      return response.data; // Backend returns rows directly
     } else {
       toast.error("Failed to fetch sheets data.");
       return [];
@@ -84,16 +74,19 @@ export async function insertTodaysData(sheetId, data, date, subrows) {
   }, 3000);
 
   try {
-    const response = await apiConnector(
-      "POST",
-      `${INSERT_TODAY_API}/${sheetId}`,
-      { attributes: data, date, subrows }
-    );
+    // Backend expects { sheet_id, date_key, values } format
+    const backendData = {
+      sheet_id: sheetId,
+      date_key: date,
+      values: data // This should be an object with column_id: value pairs
+    };
+
+    const response = await apiConnector("POST", "/rows", backendData);
     console.log("Insert Today's Data API response: ", response);
 
-    if (response.status === 201) {
+    if (response.status === 200) {
       toast.success("Today's data inserted successfully!");
-      return response.data; // Return the inserted data
+      return response.data;
     } else {
       toast.error("Failed to insert today's data.");
     }
@@ -244,10 +237,13 @@ export async function createNewSheet(sheetData) {
   const loadingToast = toast.loading("Creating new sheet...");
 
   try {
-    console.log(CREATE_SHEET_API, "api endpoint used...");
-    const response = await apiConnector("POST", CREATE_SHEET_API, {
-      ...sheetData,
-    });
+    // Backend expects { name, description } format
+    const backendData = {
+      name: sheetData.sheetName || sheetData.name,
+      description: sheetData.description || "Created via frontend"
+    };
+
+    const response = await apiConnector("POST", "/sheets", backendData);
 
     console.log("Create Sheet API response:", response);
 

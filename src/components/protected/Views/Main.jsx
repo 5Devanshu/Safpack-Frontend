@@ -19,78 +19,32 @@ import { useNavigate } from "react-router-dom";
 import { DynamicSubRows } from "./utils/SubRows";
 import ExcelExportComponent from "../ExcelExport/ExcelExportComponent";
 
-// Updated data processing utilities for new format
+// Updated data processing utilities for backend format
 const processSheetData = (metadata, sheetsData) => {
   return metadata.map((sheet) => {
-    const sheetData = sheetsData[sheet["_id"]] || [];
+    const sheetData = sheetsData[sheet.id || sheet["_id"]] || [];
 
     // Ensure sheetData is an array
     const validSheetData = Array.isArray(sheetData) ? sheetData : [];
 
-    const processedAttributes = sheet.attributes.map((attr, index) => {
-      // Extract attribute data from the new format
-      let attributeData = validSheetData.map((row) => {
-        // Check if row has attributes array and get the value at index
-        if (row && row.attributes && Array.isArray(row.attributes)) {
-          return row.attributes[index] !== undefined
-            ? row.attributes[index]
-            : "";
-        }
-        return "";
-      });
-
-      // --- BUG FIX: Add logic to resolve values for referenced columns ---
-      // if (attr.linkedFrom && attr.linkedFrom.sheetObjectId && attr.linkedFrom.attributeIndice != null) {
-      //   // Find the sheet that is being referenced from the raw data
-      //   const referencedSheetData = sheetsData[attr.linkedFrom.sheetObjectId] || [];
-      //   const referencedColumnIndex = attr.linkedFrom.attributeIndice;
-
-      //   // Ensure the referenced sheet's data is an array before processing
-      //   if (Array.isArray(referencedSheetData)) {
-      //     // Map the values from the referenced column to the current attribute's data array.
-      //     // This assumes a 1-to-1 row mapping between the sheets.
-      //     attributeData = validSheetData.map((_, rowIndex) => {
-      //       const referencedRow = referencedSheetData[rowIndex];
-      //       // Check if the corresponding row and attribute exist in the referenced data
-      //       if (referencedRow && referencedRow.attributes && referencedRow.attributes.length > referencedColumnIndex) {
-      //         return referencedRow.attributes[referencedColumnIndex];
-      //       }
-      //       // Return an empty string as a fallback if no data is found
-      //       return "";
-      //     });
-      //   }
-      // }
-
-      // Create human-readable formula for derived columns
-      let humanFormula = null;
-      if (attr.derived && attr.formula) {
-        const additionTerms = (attr.formula["additionIndices"] || []).map(
-          (idx) => sheet.attributes[idx]?.name || `Column${idx}`
-        );
-        const subtractionTerms = (attr.formula["subtractionIndices"] || []).map(
-          (idx) => sheet.attributes[idx]?.name || `Column${idx}`
-        );
-
-        const parts = [];
-        if (additionTerms.length > 0) {
-          parts.push(additionTerms.join(" + "));
-        }
-        if (subtractionTerms.length > 0) {
-          parts.push(" - " + subtractionTerms.join(" - "));
-        }
-        humanFormula = parts.join("");
+    // For now, create basic attributes since backend doesn't return column metadata with sheets
+    // This will need to be updated when backend provides column information
+    const processedAttributes = [
+      {
+        name: "date",
+        data: validSheetData.map(row => row.date_key || ""),
+        derived: false,
+        linkedFrom: null,
+        recurrentCheck: { isRecurrent: false },
+        isDeleted: false,
+        isHidden: false
       }
-
-      return {
-        ...attr,
-        data: attributeData,
-        objectId: validSheetData[0]?.["_id"] || null,
-        humanFormula,
-      };
-    });
+      // Additional columns would be added here when backend provides column metadata
+    ];
 
     return {
       ...sheet,
+      _id: sheet.id || sheet["_id"],
       attributes: processedAttributes,
     };
   });
